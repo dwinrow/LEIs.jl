@@ -1,7 +1,7 @@
 module LEIs
 
 using HTTP
-using JSON3
+using JSON
 using ProgressBars
 using Scratch
 
@@ -27,7 +27,7 @@ end
 
 function savecache(d = leidict, p = "leis.json")
     cachepath = joinpath(@get_scratch!("caches"),p)
-    JSON3.write(cachepath,[lei.lei => info.lei for (lei,info) in d])
+    JSON.json(cachepath,[lei.lei => info.lei for (lei,info) in d])
 end
 
 function removecache(p = "leis2.json")
@@ -38,7 +38,7 @@ end
 function loadcaches()
     cachepath = joinpath(@get_scratch!("caches"),"leis.json")
     if isfile(cachepath)
-        j = JSON3.read(cachepath)
+        j = JSON.parse(cachepath)
         global leidict = Dict(LEI(key) => LEI_Info(val) for (key,val) in j)
     else
         @warn "No cache on disk, try LEIs.savecaches()"
@@ -61,7 +61,7 @@ end
 
 function get(lei::LEI)
     r = HTTP.get(url_lei*string(lei.lei))
-    r.body |> String |> JSON3.read
+    r.body |> String |> JSON.parse
 end
 
 bulkaddleis(leis::Vector{Union{AbstractString,Symbol}}) = bulkaddleis(LEI.(leis))
