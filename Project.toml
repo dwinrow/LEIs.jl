@@ -1,5 +1,6 @@
 name = "LEIs"
 uuid = "0e1f8397-9c92-4a5a-b237-621570450c7e"
+version = "0.1.1"
 authors = ["Danny Winrow <dwinrow@boalco.com>"]
 
 [deps]
