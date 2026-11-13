@@ -13,15 +13,30 @@ struct LEI
     lei::Symbol
 end
 LEI(x::AbstractString) = LEI(Symbol(x))
+LEI(::Missing) = missing
 
 struct LEI_Info
     lei::AbstractDict
 end
-LEI_Info(x::Union{AbstractString,Symbol}) = LEI_Info(LEI(x))
-LEI_Info(x::LEI) = LEI_Info(lei(x.lei))
+
+LEI_Info(x::Union{AbstractString,Symbol,Missing}) = LEI_Info(LEI(x))
+function LEI_Info(lei::LEI)
+    ismissing(lei) && return missing
+    if haskey(leidict,lei)
+        leidict[lei]
+    else
+        try
+            leidict[lei] = get(lei)
+        catch e
+            @warn "Error occurred while fetching LEI info for $lei: $e"
+            missing
+        end
+    end
+end
+
+leidict = Dict{LEI,LEI_Info}()
 
 function __init__()
-    global leidict = Dict{LEI,LEI_Info}()
     loadcaches()
 end
 
@@ -45,23 +60,11 @@ function loadcaches()
     end
 end
 
-lei(x::Union{AbstractString,Symbol,Missing}) = lei(LEI(x))
-function lei(lei::LEI)
-    ismissing(x) && return missing
-    if haskey(leidict,lei.lei)
-        leidict[lei.lei]
-    else
-        try
-            leidict[lei.lei] = get(lei)
-        catch
-            missing
-        end
-    end
-end
+
 
 function get(lei::LEI)
     r = HTTP.get(url_lei*string(lei.lei))
-    r.body |> String |> JSON.parse
+    r.body |> String |> JSON.parse |> copy |> LEI_Info
 end
 
 bulkaddleis(leis::Vector{Union{AbstractString,Symbol}}) = bulkaddleis(LEI.(leis))
@@ -95,16 +98,16 @@ end
 category(lei::LEI_Info) = lei.lei[:data][:attributes][:entity][:category]
 category(lei::LEI) = category(LEI_Info(lei))
 category(lei::Union{AbstractString,Symbol}) = category(LEI(lei))
-category(lei::Missing) = missing
+category(::Missing) = missing
 
 subcategory(lei::LEI_Info) = lei.lei[:data][:attributes][:entity][:subCategory]
 subcategory(lei::LEI) = subcategory(LEI_Info(lei))
 subcategory(lei::Union{AbstractString,Symbol}) = subcategory(LEI(lei))
-subcategory(lei::Missing) = missing
+subcategory(::Missing) = missing
 
 jurisdiction(lei::LEI_Info) = lei.lei[:data][:attributes][:entity][:jurisdiction]
 jurisdiction(lei::LEI) = jurisdiction(LEI_Info(lei))
 jurisdiction(lei::Union{AbstractString,Symbol}) = jurisdiction(LEI(lei))
-jurisdiction(lei::Missing) = missing
+jurisdiction(::Missing) = missing
 
 end # module LEIs
